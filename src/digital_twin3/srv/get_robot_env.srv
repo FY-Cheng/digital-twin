@@ -1,0 +1,7 @@
+uint8 ask
+---
+float64 x_size
+float64 y_size
+geometry_msgs/Point robot_pos
+geometry_msgs/Point end_pos
+geometry_msgs/Point[] static_obs

@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- start Webots -->
+
+   <!-- <arg name="no_gui" default="false," doc="Start Webots with minimal GUI"/>
+  <include file="$(find digital_twin3)/launch/webots.launch">
+    <arg name="mode" value="realtime"/>
+    <arg name="no_gui" value="$(arg no_gui)"/>
+    <arg name="world" value="$(find digital_twin3)/worlds/mybot.wbt"/>
+  </include>-->
+  
+  <arg name="auto_close" default="false" doc="Startup mode"/> 
+  <node name="virtual_entity" pkg="digital_twin3" type="virtual_entity" output="screen" required="$(arg auto_close)"/>  
+
+  <!-- <node name="dtMonitor" pkg="digital_twin3" type="ApplicationService.py" output="screen"/> -->
+
+  <!-- <node pkg="teleop_twist_keyboard" name="keyboard" type="teleop_twist_keyboard.py" output="screen">
+    <remap from="/cmd_vel" to="/Cmd_vel"/>
+  </node> -->
+
+  <node pkg="rosbag" type="record" name="dtROSbag" args="/dt_monitor -o /home/legion/dt2/bag/dt.bag" output="screen"/>
+
+</launch>

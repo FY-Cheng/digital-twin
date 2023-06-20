@@ -1,37 +1,16 @@
 # digital_twin_project3
-
+数字孪生赋能下全向移动机器人的三维可视化监控，远程操控和自主导航。ROS代码保存。
 #### 介绍
-科研项目：数字孪生赋能下全向移动机器人的三维可视化监控，远程操控和自主导航。ROS代码保存。
+科研项目：数字孪生技术在移动机器人领域的应用探索
 
-#### 软件架构
-软件架构说明
+项目角色： 个人研究课题，总负责人
 
+研究目标：开发一个基于移动机器人的数字孪生虚拟平台，并基于此虚拟平台实现对现实机器人的一系列智能管控，包括：3D可视化监控、远程控制、模拟仿真、自主导航和动态避障等。
 
-#### 安装教程
+研究过程：
+1. 利用Blenders和Webots搭建麦克纳姆轮式机器人的三维虚拟数字孪生体，使用ROS控制；
+1. C++和Python搭建上层控制节点，通过ROS控制虚实两个机器人；孪生数据保存至SQLite数据库；
+1. 在上层控制节点设计虚实双边控制算法和自抗扰控制算法，实现虚实同步和以虚控实；
+1. 在孪生环境中设计A*路径规划和DWA避障算法，利用Apriltag定位和虚实同步实现实体自主导航。
 
-1.  xxxx
-2.  xxxx
-3.  xxxx
-
-#### 使用说明
-
-1.  xxxx
-2.  xxxx
-3.  xxxx
-
-#### 参与贡献
-
-1.  Fork 本仓库
-2.  新建 Feat_xxx 分支
-3.  提交代码
-4.  新建 Pull Request
-
-
-#### 特技
-
-1.  使用 Readme\_XXX.md 来支持不同的语言，例如 Readme\_en.md, Readme\_zh.md
-2.  Gitee 官方博客 [blog.gitee.com](https://blog.gitee.com)
-3.  你可以 [https://gitee.com/explore](https://gitee.com/explore) 这个地址来了解 Gitee 上的优秀开源项目
-4.  [GVP](https://gitee.com/gvp) 全称是 Gitee 最有价值开源项目，是综合评定出的优秀开源项目
-5.  Gitee 官方提供的使用手册 [https://gitee.com/help](https://gitee.com/help)
-6.  Gitee 封面人物是一档用来展示 Gitee 会员风采的栏目 [https://gitee.com/gitee-stars/](https://gitee.com/gitee-stars/)
+研究成果：实现数字孪生赋能移动机器人的智能监控、远程控制和自主导航，颠覆了传统机器人管控方式；同时输出科研论文4篇，其中3篇一区英文期刊在审，1篇专利已公开。
