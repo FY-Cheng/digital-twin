@@ -3,6 +3,7 @@ import numpy as np
 
 class DWA():
     def __init__(self):
+
         pass
 
     def plan(self, x, info, midpos, planning_obs):
@@ -11,6 +12,8 @@ class DWA():
         # 速度vx,vy,vth都被限制在速度空间里
         all_ctral = []
         all_scores = []
+        bestU = np.array([0, 0])
+        best_ctral = None
         for vx in np.arange(velSpace[0], velSpace[1], info.v_reso):
             for vy in np.arange(velSpace[2], velSpace[3], info.v_reso):
                 # cauculate traj for each given velSpace
@@ -29,6 +32,7 @@ class DWA():
                 ctraj = np.reshape(ctraj, (-1, 5))
 
                 # evaluate current traj (the score smaller,the traj better)
+                
                 if min_score >= ctraj_score:
                     min_score = ctraj_score
                     bestU = np.array([vx, vy])

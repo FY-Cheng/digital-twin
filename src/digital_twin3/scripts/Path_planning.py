@@ -1,6 +1,6 @@
 import rospy
 
-import sys, os, math
+import sys, os, math, csv
 import numpy as np
 import matplotlib.pyplot as plt
 from geometry_msgs.msg import Point
@@ -14,14 +14,14 @@ from digital_twin3.srv import get_robot_env
 
 
 class DWAConfig:
-    robot_radius = 0.3
+    robot_radius = 0.25
 
     def __init__(self, obs_radius):
         self.obs_radius = obs_radius
         self.dt = 0.1  # [s] Time tick for motion prediction
 
-        self.max_speed = 1.5  # [m/s] 最大线速度
-        self.min_speed = -0.5  # [m/s] 最小线速度
+        self.max_speed = 1  # [m/s] 最大线速度
+        self.min_speed = -1  # [m/s] 最小线速度
         self.max_accel = 0.5 # [m/ss] 加速度
         self.v_reso = self.max_accel*self.dt/2  # [m/s] 速度增加的步长
 
@@ -31,14 +31,14 @@ class DWAConfig:
         self.yawrate_reso = self.max_dyawrate*self.dt/2  # [rad/s] 角速度增加的步长
 
         # 模拟轨迹的持续时间
-        self.predict_time = 4  # [s]
+        self.predict_time = 2  # [s]
 
         # 三个比例系数
         self.to_goal_cost_gain = 1.0  # 距离目标点的评价函数的权重系数
-        self.speed_cost_gain = 0.7  # 速度评价函数的权重系数
-        self.obstacle_cost_gain = 1.0  # 距离障碍物距离的评价函数的权重系数
+        self.speed_cost_gain = 1.0  # 速度评价函数的权重系数
+        self.obstacle_cost_gain = 0.3  # 距离障碍物距离的评价函数的权重系数
 
-        self.tracking_dist = self.predict_time*self.max_speed
+        self.tracking_dist = self.predict_time * self.max_speed
         self.arrive_dist = 0.1
 
 
@@ -52,7 +52,7 @@ class DT_planning:
         self.endPoint = []
         self.obsList = np.empty(shape=(0, 2))
         self.globalPathList = np.empty(shape=(0, 2))
-        self.planning_obs_radius = 0.25
+        self.planning_obs_radius = 0.15
         
         # DWA local planning related
         self.dwa = DWA()
@@ -61,7 +61,7 @@ class DT_planning:
         self.timestep = self.dwaConfig.dt
 
         # robot related
-        self.robot_radius = 0.3
+        self.robot_radius = 0.25
         self.robotPos = [0, 0, 0]
         self.robotVel = [0, 0, 0]
         self.robotTraj = [[0, 0]]
@@ -85,8 +85,14 @@ class DT_planning:
 
         # A* based on the webots env information
         self.globalPathList = self.global_plan()
+        print(self.globalPathList)
         rospy.loginfo("Planning | A* plans global path done! Path points number : %d",self.globalPathList.shape[0])
-        
+        with open(os.path.dirname(os.path.abspath(__file__))+'/globalPath.csv', "w",newline='') as csv_file:
+            writer = csv.writer(csv_file)
+            for line in self.globalPathList:
+                writer.writerow([line[0], line[1]])
+
+
         rospy.Subscriber("/dt_robot/odom", Odometry, self.get_robot_states_callback)
         robotVelCtrlPub = rospy.Publisher('/controller2', Point, queue_size=10)
 
@@ -167,9 +173,9 @@ class DT_planning:
             plt.plot(self.robotTraj[0], self.robotTraj[1], 'g-')
         
         # 障碍物绘制
-        # for obs in self.obsList:
-        #     self.ax.add_artist(plt.Circle(
-        #         (obs[0], obs[1]), self.planning_obs_radius, fill=True))
+        for obs in self.obsList:
+            self.ax.add_artist(plt.Circle(
+                (obs[0], obs[1]), self.planning_obs_radius, fill=True))
        
         # 坐标轴
         self.ax.set_xlim(self.mapRange[0]-2, self.mapRange[1]+2)
@@ -184,6 +190,13 @@ class DT_planning:
             return -1
         if self.dwaMidposIndex is not None and self.dwaMidposIndex >= 0:
             midindex = self.dwaMidposIndex
+            
+            # 定义自适应预瞄点
+            vv = np.hypot(self.robotVel[0],self.robotVel[1])
+            myDist = vv*self.dwaConfig.predict_time
+            myDist = myDist if myDist >= 0.5 else 0.5
+            self.dwaConfig.tracking_dist = myDist
+
             while True:
                 midpos = self.globalPathList[midindex]
                 dist = np.hypot(self.robotPos[0]-midpos[0], self.robotPos[1]-midpos[1])
