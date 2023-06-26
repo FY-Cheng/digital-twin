@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from geometry_msgs.msg import Point
 from nav_msgs.msg import Odometry
 
+import matplotlib.patches as mpatches
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from AStarPlanner import AStarPlanner
 from DWA import DWA
@@ -67,7 +68,7 @@ class DT_planning:
         self.robotTraj = [[0, 0]]
         
         # figure related
-        self.fig, self.ax = plt.subplots()
+        self.fig, self.ax = plt.subplots(figsize=(8, 8))
         self.fig.canvas.mpl_connect('key_press_event', self.key_press)
 
     def process(self):
@@ -133,18 +134,18 @@ class DT_planning:
         p1 = np.matmul(T, p1_i)
         p2 = np.matmul(T, p2_i)
         p3 = np.matmul(T, p3_i)
-        plt.plot([p1[0], p2[0], p3[0], p1[0]], [
-                 p1[1], p2[1], p3[1], p1[1]], 'c-')
+        pp1 = plt.plot([p1[0], p2[0], p3[0], p1[0]], [p1[1], p2[1], p3[1], p1[1]], 
+                 'c-', linewidth =2.0)
 
         # 边界绘制
-        plt.plot([self.mapRange[0], self.mapRange[0], self.mapRange[1], self.mapRange[1], self.mapRange[0]], 
+        pp2 = plt.plot([self.mapRange[0], self.mapRange[0], self.mapRange[1], self.mapRange[1], self.mapRange[0]], 
                  [self.mapRange[2], self.mapRange[3], self.mapRange[3], self.mapRange[2], self.mapRange[2]],
-                 'k-', markersize=10)
-        
+                 'k--', linewidth = 3.5)
+        pp3 = None
         # 目标点绘制
         if self.endPoint is not None:
-            self.ax.plot(
-                self.endPoint[0], self.endPoint[1], "r*", markersize=10)
+            pp3 = self.ax.plot(
+                self.endPoint[0], self.endPoint[1], "m*", markersize=20)
         
         # 所有路径绘制
         if len(all_traj) > 0:
@@ -158,15 +159,18 @@ class DT_planning:
         # 当前最优路径绘制
         if best_traj is not None:
             self.ax.plot(best_traj[:,0],best_traj[:,1],color="red",linewidth=3)
-
+        
+        pp4 = None
+        pp5 = None
+        pp6 = None
         if self.globalPathList is not None:
             # 全局路径绘制
-            self.ax.plot(self.globalPathList[:, 0],
-                         self.globalPathList[:, 1], 'b:')
+            pp4 = self.ax.plot(self.globalPathList[:, 0],
+                         self.globalPathList[:, 1], 'b:', linewidth = 3.0)
             # 参考点绘制
             if self.dwaMidposIndex is not None and self.dwaMidposIndex >= 0:
                 midpos = self.globalPathList[self.dwaMidposIndex]
-                self.ax.plot(midpos[0], midpos[1], "g+", markersize=20)
+                pp5 = self.ax.plot(midpos[0], midpos[1], "g+", markersize=20)
 
         # 车走过的路径绘制
         if len(self.robotTraj) > 0:
@@ -174,14 +178,38 @@ class DT_planning:
         
         # 障碍物绘制
         for obs in self.obsList:
-            self.ax.add_artist(plt.Circle(
-                (obs[0], obs[1]), self.planning_obs_radius, fill=True))
+            pp6 = self.ax.add_artist(plt.Circle(
+                (obs[0], obs[1]), self.planning_obs_radius, fill=True, color="red"))
        
         # 坐标轴
-        self.ax.set_xlim(self.mapRange[0]-2, self.mapRange[1]+2)
-        self.ax.set_ylim(self.mapRange[2]-2, self.mapRange[3]+2)
-        self.ax.set_xlabel("X (m)")
-        self.ax.set_ylabel("Y (m)")
+        self.ax.set_xlim(self.mapRange[0]-1, self.mapRange[1]+1)
+        self.ax.set_ylim(self.mapRange[2]-1, self.mapRange[3]+1)
+        self.ax.set_xlabel("X-axis (m)",fontsize = 24)
+        self.ax.set_ylabel("Y-axis (m)",fontsize = 24)
+        self.ax.tick_params(labelsize=20)
+        m = 3
+        self.ax.spines['bottom'].set_linewidth(m)
+        self.ax.spines['left'].set_linewidth(m)
+        self.ax.spines['right'].set_linewidth(m)
+        self.ax.spines['top'].set_linewidth(m)
+
+        # color = ['lightskyblue', 'lime', 'red', 'gold']
+        # labels = ['winter', 'spring', 'summer', 'autumn']
+        # patches = [ mpatches.Patch(color=color[i], label="{:s}".format(labels[i]) ) for i in range(len(color))]
+        # self.ax.legend(handles=patches, bbox_to_anchor=(0.95,1.12), ncol=4)
+        
+        #l1 = self.ax.legend((pp2), ("boundary"), loc=0, frameon=False)
+        # l1 = self.ax.legend((pp2,pp3,pp6), 
+        #                ("boundary","endpoint","obstacle"), 
+        #                loc=0)
+        
+        # l2 = self.ax.legend([pp1,pp2,pp3,pp4,pp5,pp6], 
+        #                ["robot","boundary","endpoint","global path","preview point","obstacle"], 
+        #                loc='upper left')
+        
+        # l2 = self.ax.legend([pp1,pp2,pp3,pp4,pp5,pp6], 
+        #                ["robot","boundary","endpoint","global path","preview point","obstacle"], 
+        #                loc='upper left')
 
         plt.pause(self.timestep)
 
@@ -194,7 +222,7 @@ class DT_planning:
             # 定义自适应预瞄点
             vv = np.hypot(self.robotVel[0],self.robotVel[1])
             myDist = vv*self.dwaConfig.predict_time
-            myDist = myDist if myDist >= 0.5 else 0.5
+            myDist = myDist if myDist >= 1 else 1
             self.dwaConfig.tracking_dist = myDist
 
             while True:
