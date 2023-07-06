@@ -5,43 +5,45 @@ class DWA():
     def __init__(self):
 
         pass
-
+    # x:(x,y,th, vx,vy,vth)
     def plan(self, x, info, midpos, planning_obs):
         velSpace = self.vw_generate(x, info)
         min_score = 1000.0
         # 速度vx,vy,vth都被限制在速度空间里
         all_ctral = []
         all_scores = []
-        bestU = np.array([0, 0])
+        bestU = np.array([0, 0, 0])
         best_ctral = None
+        
         for vx in np.arange(velSpace[0], velSpace[1], info.v_reso):
             for vy in np.arange(velSpace[2], velSpace[3], info.v_reso):
-                # cauculate traj for each given velSpace
-                ctraj = self.traj_cauculate(x, [vx, vy], info)
-                # print(ctraj)
-                # 计算评价函数
-                goal_score = info.to_goal_cost_gain * \
-                    self.goal_evaluate(ctraj, midpos)
-                vel_score = info.speed_cost_gain * \
-                    self.velocity_evaluate(ctraj, info)
-                traj_score = info.obstacle_cost_gain * \
-                    self.traj_evaluate(ctraj, planning_obs, info)
-                # 可行路径不止一条，通过评价函数确定最佳路径,路径总分数 = 距离目标点+速度+障碍物 
-                # 分数越低，路径越优
-                ctraj_score = goal_score + vel_score + traj_score
-                ctraj = np.reshape(ctraj, (-1, 5))
+                for vth in np.arange(velSpace[4], velSpace[5], info.yawrate_reso):
+                    # vth = 0 # 不转向
+                    # cauculate traj for each given velSpace
+                    ctraj = self.traj_cauculate(x, [vx, vy, vth], info)
+                    # print(ctraj)
+                    # 计算评价函数
+                    goal_score = info.to_goal_cost_gain * \
+                        self.goal_evaluate(ctraj, midpos)
+                    vel_score = info.speed_cost_gain * \
+                        self.velocity_evaluate(ctraj, info)
+                    traj_score = info.obstacle_cost_gain * \
+                        self.traj_evaluate(ctraj, planning_obs, info)
+                    # 可行路径不止一条，通过评价函数确定最佳路径,路径总分数 = 距离目标点+速度+障碍物 
+                    # 分数越低，路径越优
+                    ctraj_score = goal_score + vel_score + traj_score
+                    ctraj = np.reshape(ctraj, (-1, 6))
 
-                # evaluate current traj (the score smaller,the traj better)
+                    # evaluate current traj (the score smaller,the traj better)
+                    
+                    if min_score >= ctraj_score:
+                        min_score = ctraj_score
+                        bestU = np.array([vx, vy, vth])
+                        # print(u)
+                        best_ctral = ctraj
+                    all_ctral.append(ctraj)
+                    all_scores.append(ctraj_score)
                 
-                if min_score >= ctraj_score:
-                    min_score = ctraj_score
-                    bestU = np.array([vx, vy])
-                    # print(u)
-                    best_ctral = ctraj
-                all_ctral.append(ctraj)
-                all_scores.append(ctraj_score)
-                
-            
         return bestU, best_ctral, all_ctral, all_scores
 
     # 定义机器人运动模型
@@ -50,9 +52,10 @@ class DWA():
         # robot motion model: x,y,theta,vx,vy
         x[0] += u[0] * dt * np.cos(x[2]) - u[1] * dt * np.sin(x[2])
         x[1] += u[0] * dt * np.sin(x[2]) + u[1] * dt * np.cos(x[2])
-        x[2] += 0
+        x[2] += u[2] * dt
         x[3] = u[0]
         x[4] = u[1]
+        x[5] = u[2]
         return x
 
     # 依据当前位置及速度，预测轨迹
@@ -68,24 +71,26 @@ class DWA():
 
         # print(ctraj)
         return ctraj
-        
-
+    
 
     # 产生速度空间
     def vw_generate(self, x, info):
-        # generate vx,vy window for traj prediction
+        # generate vx,vy,vth window for traj prediction
         Vinfo = [info.min_speed, info.max_speed,
-                 info.min_speed, info.max_speed]
+                 info.min_speed, info.max_speed,
+                 info.min_yawrate, info.max_yawrate]
 
         Vmove = [x[3] - info.max_accel * info.dt,       # vx
                  x[3] + info.max_accel * info.dt,
                  x[4] - info.max_accel * info.dt,       # vy
-                 x[4] + info.max_accel * info.dt]
+                 x[4] + info.max_accel * info.dt,
+                 x[5] - info.max_dyawrate * info.dt,       # vth
+                 x[5] + info.max_dyawrate * info.dt]
 
         # 保证速度变化不超过info限制的范围
         v = [max(Vinfo[0], Vmove[0]), min(Vinfo[1], Vmove[1]),
-             max(Vinfo[2], Vmove[2]), min(Vinfo[3], Vmove[3])]
-
+             max(Vinfo[2], Vmove[2]), min(Vinfo[3], Vmove[3]),
+             max(Vinfo[4], Vmove[4]), min(Vinfo[5], Vmove[5])]
         return v
 
     # 距离目标点评价函数

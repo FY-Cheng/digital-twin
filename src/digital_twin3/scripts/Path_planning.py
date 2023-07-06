@@ -26,13 +26,13 @@ class DWAConfig:
         self.max_accel = 0.5 # [m/ss] 加速度
         self.v_reso = self.max_accel*self.dt/2  # [m/s] 速度增加的步长
 
-        self.min_yawrate = -100.0 * math.pi / 180.0  # [rad/s] 最小角速度
-        self.max_yawrate = 100.0 * math.pi / 180.0  # [rad/s] 最大角速度
-        self.max_dyawrate = 500.0 * math.pi / 180.0  # [rad/ss] 角加速度
+        self.min_yawrate = -90.0 * math.pi / 180.0  # [rad/s] 最小角速度
+        self.max_yawrate = 90.0 * math.pi / 180.0  # [rad/s] 最大角速度
+        self.max_dyawrate = 90.0 * math.pi / 180.0  # [rad/ss] 角加速度
         self.yawrate_reso = self.max_dyawrate*self.dt/2  # [rad/s] 角速度增加的步长
 
         # 模拟轨迹的持续时间
-        self.predict_time = 2  # [s]
+        self.predict_time = 3  # [s]
 
         # 三个比例系数
         self.to_goal_cost_gain = 1.0  # 距离目标点的评价函数的权重系数
@@ -86,7 +86,7 @@ class DT_planning:
 
         # A* based on the webots env information
         self.globalPathList = self.global_plan()
-        print(self.globalPathList)
+        # print(self.globalPathList)
         rospy.loginfo("Planning | A* plans global path done! Path points number : %d",self.globalPathList.shape[0])
         with open(os.path.dirname(os.path.abspath(__file__))+'/globalPath.csv', "w",newline='') as csv_file:
             writer = csv.writer(csv_file)
@@ -105,12 +105,12 @@ class DT_planning:
             
             # preview point index
             self.dwaMidposIndex = self.check_path()
-            robotCurrStates = [self.robotPos[0],self.robotPos[1],self.robotPos[2],self.robotVel[0],self.robotVel[1]]
+            robotCurrStates = [self.robotPos[0],self.robotPos[1],self.robotPos[2],self.robotVel[0],self.robotVel[1],self.robotVel[2]]
 
             # get best velocity
             if self.dwaMidposIndex >= 0:
                 midpos = self.globalPathList[self.dwaMidposIndex]
-                [self.robotVel[0],self.robotVel[1]], best_traj, all_traj, all_u = self.dwa.plan(
+                [self.robotVel[0],self.robotVel[1],self.robotVel[2]], best_traj, all_traj, all_u = self.dwa.plan(
                     robotCurrStates,self.dwaConfig, midpos, self.obsList)
             else:
                 self.robotVel = [0.0, 0.0, 0.0]
@@ -127,9 +127,9 @@ class DT_planning:
 
     def plot(self, all_traj, all_value, best_traj):
         # 车身绘制，包含位置和角度
-        p1_i = np.array([0.5, 0, 1]).T
-        p2_i = np.array([-0.5, 0.25, 1]).T
-        p3_i = np.array([-0.5, -0.25, 1]).T
+        p1_i = np.array([0.3, 0, 1]).T
+        p2_i = np.array([-0.3, 0.15, 1]).T
+        p3_i = np.array([-0.3, -0.15, 1]).T
         T = self.transformation_matrix(self.robotPos[0], self.robotPos[1], self.robotPos[2])
         p1 = np.matmul(T, p1_i)
         p2 = np.matmul(T, p2_i)
@@ -222,7 +222,7 @@ class DT_planning:
             # 定义自适应预瞄点
             vv = np.hypot(self.robotVel[0],self.robotVel[1])
             myDist = vv*self.dwaConfig.predict_time
-            myDist = myDist if myDist >= 1 else 1
+            myDist = myDist if myDist >= 1.5 else 1
             self.dwaConfig.tracking_dist = myDist
 
             while True:
