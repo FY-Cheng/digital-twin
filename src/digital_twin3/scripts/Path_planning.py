@@ -5,14 +5,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 from geometry_msgs.msg import Point
 from nav_msgs.msg import Odometry
-
+from decimal import Decimal
 import matplotlib.patches as mpatches
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from AStarPlanner import AStarPlanner
 from DWA import DWA
 from digital_twin3.srv import get_robot_env
-
-
 
 class DWAConfig:
     robot_radius = 0.25
@@ -91,7 +89,10 @@ class DT_planning:
         with open(os.path.dirname(os.path.abspath(__file__))+'/globalPath.csv', "w",newline='') as csv_file:
             writer = csv.writer(csv_file)
             for line in self.globalPathList:
-                writer.writerow([line[0], line[1]])
+                # 四舍五入保留两位小数
+                a = Decimal(line[0]).quantize(Decimal("0.1"), rounding = "ROUND_HALF_UP")
+                b = Decimal(line[1]).quantize(Decimal("0.1"), rounding = "ROUND_HALF_UP")
+                writer.writerow([a, b])
 
 
         rospy.Subscriber("/dt_robot/odom", Odometry, self.get_robot_states_callback)
@@ -142,6 +143,7 @@ class DT_planning:
                  [self.mapRange[2], self.mapRange[3], self.mapRange[3], self.mapRange[2], self.mapRange[2]],
                  'k--', linewidth = 3.5)
         pp3 = None
+        # self.ax.grid()
         # 目标点绘制
         if self.endPoint is not None:
             pp3 = self.ax.plot(
